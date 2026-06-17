@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Environment / secrets
+.env
+**/.env
+*.local
+
+# Build output
+dist/
+build/
+**/dist/
+**/build/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+**/*.log
+
+# Uploads (runtime user content)
+uploads/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Expo / mobile
+.expo/
+**/.expo/

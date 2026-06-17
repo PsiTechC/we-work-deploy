@@ -1,0 +1,178 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              Int              @id @default(autoincrement())
+  email           String           @unique
+  name            String?
+  password        String
+  role            String           @default("EMPLOYEE")
+  phone           String?
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  audits          Audit[]
+  managedExpenses Expense[]        @relation("ManagerExpenses")
+  fundAllocations FundAllocation[]
+  attendances     Attendance[]
+}
+
+model Invoice {
+  id            Int           @id @default(autoincrement())
+  invoiceNumber String        @unique
+  date          DateTime      @default(now())
+  dueDate       DateTime?
+  siteId        Int
+  site          Site          @relation(fields: [siteId], references: [id])
+  customerId    Int?
+  customer      Customer?     @relation("CustomerInvoices", fields: [customerId], references: [id])
+  customerName  String?
+  subtotal      Float?
+  tax           Float?
+  total         Float?
+  items         InvoiceItem[]
+}
+
+model Audit {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  invoiceId Int?
+  createdAt DateTime @default(now())
+}
+
+model Customer {
+  id        Int       @id @default(autoincrement())
+  name      String
+  phone     String?
+  address   String?
+  createdAt DateTime  @default(now())
+  invoices  Invoice[] @relation("CustomerInvoices")
+}
+
+model Vendor {
+  id         Int      @id @default(autoincrement())
+  name       String
+  agencyCode String?
+  phone      String?
+  address    String?
+  createdAt  DateTime @default(now())
+}
+
+model Expense {
+  id           Int      @id @default(autoincrement())
+  siteId       Int
+  site         Site     @relation(fields: [siteId], references: [id])
+  managerId    Int?
+  manager      User?    @relation("ManagerExpenses", fields: [managerId], references: [id])
+  category     String
+  amount       Float
+  companyPaid  Float    @default(0)
+  personalPaid Float    @default(0)
+  fundType     String   @default("COMPANY")
+  receiptUrl   String?
+  date         DateTime @default(now())
+  notes        String?
+  approved     Boolean  @default(false)
+}
+
+model SiteWallet {
+  id                      Int      @id @default(autoincrement())
+  siteId                  Int      @unique
+  site                    Site     @relation(fields: [siteId], references: [id])
+  companyBalance          Float    @default(0)
+  totalCompanySpent       Float    @default(0)
+  totalPersonalSpent      Float    @default(0)
+  totalPersonalReimbursed Float    @default(0)
+  totalFundsReceived      Float    @default(0)
+  updatedAt               DateTime @updatedAt
+}
+
+model FundAllocation {
+  id               Int      @id @default(autoincrement())
+  siteId           Int
+  site             Site     @relation(fields: [siteId], references: [id])
+  addedById        Int?
+  addedBy          User?    @relation(fields: [addedById], references: [id])
+  amount           Float
+  reimbursedAmount Float    @default(0)
+  notes            String?
+  date             DateTime @default(now())
+}
+
+model Attendance {
+  id           Int       @id @default(autoincrement())
+  userId       Int
+  user         User      @relation(fields: [userId], references: [id])
+  date         String
+  checkIn      DateTime?
+  checkOut     DateTime?
+  checkInLat   Float?
+  checkInLng   Float?
+  checkOutLat  Float?
+  checkOutLng  Float?
+  hoursWorked  Float?
+  notes        String?
+  createdAt    DateTime  @default(now())
+
+  @@unique([userId, date])
+}
+
+model Project {
+  id        Int      @id @default(autoincrement())
+  name      String
+  siteId    Int?
+  site      Site?    @relation(fields: [siteId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Site {
+  id              Int              @id @default(autoincrement())
+  name            String           @unique
+  invoices        Invoice[]
+  expenses        Expense[]
+  projects        Project[]
+  wallet          SiteWallet?
+  fundAllocations FundAllocation[]
+}
+
+model InvoiceItem {
+  id          Int     @id @default(autoincrement())
+  invoiceId   Int
+  invoice     Invoice @relation(fields: [invoiceId], references: [id])
+  description String
+  quantity    Int
+  unitPrice   Float
+  total       Float
+}
+
+model Organisation {
+  id          Int      @id @default(autoincrement())
+  companyName String?
+  tagline     String?
+  regNumber   String?
+  gstNumber   String?
+  panNumber   String?
+  address     String?
+  city        String?
+  state       String?
+  pincode     String?
+  phone       String?
+  email       String?
+  website     String?
+  updatedAt   DateTime @updatedAt
+}
+
+model OrgDocument {
+  id         Int      @id @default(autoincrement())
+  name       String
+  docType    String
+  fileUrl    String
+  uploadedAt DateTime @default(now())
+}

@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: wework-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: file:/app/data/prod.db
+      JWT_SECRET: WeWork2024SecretKey_Rushika!
+      PORT: 4000
+      NODE_ENV: production
+    volumes:
+      - sqlite_data:/app/data
+      - uploads_data:/uploads
+    networks:
+      - wework-net
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: /api
+    container_name: wework-frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - wework-net
+
+volumes:
+  sqlite_data:
+  uploads_data:
+
+networks:
+  wework-net:
+    driver: bridge

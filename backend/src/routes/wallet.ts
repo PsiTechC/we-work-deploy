@@ -1,0 +1,212 @@
+import { Router } from 'express';
+import { PrismaClient } from '@prisma/client';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { authMiddleware } from '../utils/auth';
+
+const uploadsDir = path.join(__dirname, '../../../uploads/receipts');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, uploadsDir),
+  filename: (_req, file, cb) => cb(null, `${Date.now()}-${file.originalname.replace(/\s/g, '_')}`),
+});
+const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
+
+export default function (prisma: PrismaClient) {
+  const router = Router();
+  router.use(authMiddleware);
+
+  // Get all site wallets with full summary
+  router.get('/', async (_req, res) => {
+    try {
+      const sites = await prisma.site.findMany({
+        include: {
+          wallet: true,
+          fundAllocations: { orderBy: { date: 'desc' }, take: 10 },
+          expenses: {
+            orderBy: { date: 'desc' },
+            take: 20,
+            include: { manager: { select: { id: true, name: true, email: true } } },
+          },
+        },
+      });
+
+      // Auto-create wallet for sites that don't have one
+      for (const site of sites) {
+        if (!site.wallet) {
+          await prisma.siteWallet.create({ data: { siteId: site.id } });
+        }
+      }
+
+      const result = await prisma.site.findMany({
+        include: {
+          wallet: true,
+          fundAllocations: { orderBy: { date: 'desc' } },
+          expenses: {
+            orderBy: { date: 'desc' },
+            include: { manager: { select: { id: true, name: true, email: true } } },
+          },
+        },
+      });
+
+      res.json(result);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Failed to fetch wallets' });
+    }
+  });
+
+  // Add company funds to a site — auto-reimburses manager personal money first
+  router.post('/fund', async (req: any, res) => {
+    const { siteId, amount, notes } = req.body;
+    if (!siteId || !amount || Number(amount) <= 0) {
+      return res.status(400).json({ error: 'siteId and amount required' });
+    }
+    try {
+      const fund = Number(amount);
+
+      // Ensure wallet exists
+      let wallet = await prisma.siteWallet.findUnique({ where: { siteId: Number(siteId) } });
+      if (!wallet) {
+        wallet = await prisma.siteWallet.create({ data: { siteId: Number(siteId) } });
+      }
+
+      const pendingReimbursement = wallet.totalPersonalSpent - wallet.totalPersonalReimbursed;
+      const reimbursedNow = Math.min(fund, pendingReimbursement);
+      const addedToBalance = fund - reimbursedNow;
+
+      // Update wallet
+      await prisma.siteWallet.update({
+        where: { siteId: Number(siteId) },
+        data: {
+          companyBalance: { increment: addedToBalance },
+          totalFundsReceived: { increment: fund },
+          totalPersonalReimbursed: { increment: reimbursedNow },
+        },
+      });
+
+      // Record fund allocation
+      const allocation = await prisma.fundAllocation.create({
+        data: {
+          siteId: Number(siteId),
+          amount: fund,
+          reimbursedAmount: reimbursedNow,
+          notes,
+          addedById: req.user?.id,
+        },
+        include: { site: true, addedBy: { select: { name: true, email: true } } },
+      });
+
+      const updatedWallet = await prisma.siteWallet.findUnique({ where: { siteId: Number(siteId) } });
+
+      res.json({
+        allocation,
+        wallet: updatedWallet,
+        summary: {
+          fundAdded: fund,
+          reimbursedToManager: reimbursedNow,
+          addedToCompanyBalance: addedToBalance,
+          pendingReimbursementBefore: pendingReimbursement,
+        },
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Failed to add funds' });
+    }
+  });
+
+  // Add expense — auto-deducts from company balance first, then personal (with optional receipt upload)
+  router.post('/expense', upload.single('receipt'), async (req: any, res) => {
+    const { siteId, category, amount, notes } = req.body;
+    const receiptUrl = req.file ? `/uploads/receipts/${req.file.filename}` : undefined;
+    if (!siteId || !category || !amount || Number(amount) <= 0) {
+      return res.status(400).json({ error: 'siteId, category and amount required' });
+    }
+    try {
+      const total = Number(amount);
+
+      let wallet = await prisma.siteWallet.findUnique({ where: { siteId: Number(siteId) } });
+      if (!wallet) {
+        wallet = await prisma.siteWallet.create({ data: { siteId: Number(siteId) } });
+      }
+
+      // Calculate how much comes from company vs personal
+      const companyPaid = Math.min(wallet.companyBalance, total);
+      const personalPaid = +(total - companyPaid).toFixed(2);
+
+      let fundType = 'COMPANY';
+      if (companyPaid === 0) fundType = 'PERSONAL';
+      else if (personalPaid > 0) fundType = 'SPLIT';
+
+      // Update wallet
+      await prisma.siteWallet.update({
+        where: { siteId: Number(siteId) },
+        data: {
+          companyBalance: { decrement: companyPaid },
+          totalCompanySpent: { increment: companyPaid },
+          totalPersonalSpent: { increment: personalPaid },
+        },
+      });
+
+      // Create expense record
+      const expense = await prisma.expense.create({
+        data: {
+          siteId: Number(siteId),
+          managerId: req.user?.id,
+          category,
+          amount: total,
+          companyPaid,
+          personalPaid,
+          fundType,
+          notes,
+          receiptUrl,
+        },
+        include: {
+          site: true,
+          manager: { select: { id: true, name: true, email: true } },
+        },
+      });
+
+      const updatedWallet = await prisma.siteWallet.findUnique({ where: { siteId: Number(siteId) } });
+
+      res.json({ expense, wallet: updatedWallet });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Failed to add expense' });
+    }
+  });
+
+  // Full transaction history for a site
+  router.get('/history/:siteId', async (req, res) => {
+    const siteId = Number(req.params.siteId);
+    try {
+      const [expenses, funds, wallet] = await Promise.all([
+        prisma.expense.findMany({
+          where: { siteId },
+          orderBy: { date: 'desc' },
+          include: { manager: { select: { id: true, name: true, email: true } }, site: true },
+        }),
+        prisma.fundAllocation.findMany({
+          where: { siteId },
+          orderBy: { date: 'desc' },
+          include: { addedBy: { select: { name: true, email: true } }, site: true },
+        }),
+        prisma.siteWallet.findUnique({ where: { siteId } }),
+      ]);
+
+      // Merge and sort chronologically
+      const timeline = [
+        ...expenses.map(e => ({ ...e, txType: 'EXPENSE' })),
+        ...funds.map(f => ({ ...f, txType: 'FUND' })),
+      ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+      res.json({ timeline, wallet });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to fetch history' });
+    }
+  });
+
+  return router;
+}
