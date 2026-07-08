@@ -22,15 +22,54 @@ const num = (n: number) =>
   Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 function CompanyLogo() {
-  // Orange stacked-bars building mark, recreated in SVG
+  // Modern construction emblem: rounded brand-orange tile with a white
+  // building skyline and a topping-out flag. Pure inline SVG so it prints
+  // cleanly in invoices/PDFs with no external asset dependency.
   return (
-    <svg width="70" height="60" viewBox="0 0 70 60" aria-label="We Work logo">
-      <polygon points="8,52 8,20 22,10 22,52" fill="#c9ccce" />
-      <polygon points="22,52 22,4 38,14 38,52" fill="#f39c12" />
-      <polygon points="38,52 38,16 40,16 40,52" fill="#b0b4b7" />
-      <rect x="40" y="18" width="6" height="34" fill="#f39c12" />
-      <rect x="47" y="22" width="5" height="30" fill="#c9ccce" />
-      <rect x="53" y="26" width="5" height="26" fill="#f39c12" />
+    <svg width="66" height="60" viewBox="0 0 66 60" role="img" aria-label="We Work Constructions logo">
+      <defs>
+        <linearGradient id="wwTile" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#f9b234" />
+          <stop offset="1" stopColor="#e07d0a" />
+        </linearGradient>
+      </defs>
+
+      {/* rounded tile */}
+      <rect x="3" y="3" width="60" height="54" rx="13" fill="url(#wwTile)" />
+      <rect x="3.75" y="3.75" width="58.5" height="52.5" rx="12.25" fill="none" stroke="#ffffff" strokeOpacity="0.25" strokeWidth="1.5" />
+
+      {/* skyline (white knockout) */}
+      <g fill="#ffffff">
+        {/* left tower */}
+        <rect x="15" y="28" width="9" height="19" rx="1.5" />
+        {/* center tower (tallest) */}
+        <rect x="26" y="15" width="12" height="32" rx="1.5" />
+        {/* right tower */}
+        <rect x="40" y="31" width="9" height="16" rx="1.5" />
+        {/* ground bar */}
+        <rect x="13" y="46" width="38" height="3.5" rx="1.75" />
+      </g>
+
+      {/* windows (tile colour, punched into towers) */}
+      <g fill="#e07d0a">
+        <rect x="17.5" y="31" width="1.8" height="1.8" /><rect x="20.7" y="31" width="1.8" height="1.8" />
+        <rect x="17.5" y="35" width="1.8" height="1.8" /><rect x="20.7" y="35" width="1.8" height="1.8" />
+        <rect x="17.5" y="39" width="1.8" height="1.8" /><rect x="20.7" y="39" width="1.8" height="1.8" />
+
+        <rect x="28.5" y="19" width="2" height="2" /><rect x="31.5" y="19" width="2" height="2" /><rect x="34.5" y="19" width="2" height="2" />
+        <rect x="28.5" y="24" width="2" height="2" /><rect x="31.5" y="24" width="2" height="2" /><rect x="34.5" y="24" width="2" height="2" />
+        <rect x="28.5" y="29" width="2" height="2" /><rect x="31.5" y="29" width="2" height="2" /><rect x="34.5" y="29" width="2" height="2" />
+        <rect x="28.5" y="34" width="2" height="2" /><rect x="31.5" y="34" width="2" height="2" /><rect x="34.5" y="34" width="2" height="2" />
+
+        <rect x="42.5" y="34" width="1.8" height="1.8" /><rect x="45.7" y="34" width="1.8" height="1.8" />
+        <rect x="42.5" y="38" width="1.8" height="1.8" /><rect x="45.7" y="38" width="1.8" height="1.8" />
+      </g>
+
+      {/* topping-out flag on the tallest tower */}
+      <g>
+        <rect x="31.2" y="9" width="1.6" height="7" fill="#ffffff" />
+        <polygon points="32.8,9.3 39,11.4 32.8,13.5" fill="#ffffff" />
+      </g>
     </svg>
   )
 }
