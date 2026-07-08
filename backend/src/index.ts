@@ -15,6 +15,7 @@ import walletRouter from './routes/wallet';
 import usersRouter from './routes/users';
 import attendanceRouter from './routes/attendance';
 import organisationRouter from './routes/organisation';
+import billingRouter from './routes/billing';
 
 dotenv.config();
 const app = express();
@@ -42,6 +43,7 @@ app.use('/api/wallet', walletRouter(prisma));
 app.use('/api/users', usersRouter(prisma));
 app.use('/api/attendance', attendanceRouter(prisma));
 app.use('/api/organisation', organisationRouter(prisma));
+app.use('/api/billing', billingRouter(prisma));
 
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);

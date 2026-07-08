@@ -55,4 +55,12 @@ export const fetchOrgDocuments = () => api.get('/organisation/documents').then(r
 export const uploadOrgDocument = (d: FormData) => api.post('/organisation/documents', d, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data)
 export const deleteOrgDocument = (id: number) => api.delete(`/organisation/documents/${id}`).then(r => r.data)
 
+// Billing / GST Tax Invoice
+export const fetchBills        = () => api.get('/billing').then(r => r.data)
+export const fetchBill         = (id: number) => api.get(`/billing/${id}`).then(r => r.data)
+export const fetchNextBillNo   = () => api.get('/billing/next-number').then(r => r.data)
+export const fetchHsnCodes     = () => api.get('/billing/hsn').then(r => r.data)
+export const createBill        = (d: any) => api.post('/billing', d).then(r => r.data)
+export const deleteBill        = (id: number) => api.delete(`/billing/${id}`).then(r => r.data)
+
 export default api

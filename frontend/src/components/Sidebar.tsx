@@ -2,11 +2,11 @@ import React from 'react'
 import {
   LayoutDashboard, Wallet, Users, Truck, BarChart2,
   LogOut, HardHat, ChevronRight, CalendarCheck, UserCog, MapPin,
-  Building, Sun, Moon, X
+  Building, Sun, Moon, X, ReceiptText
 } from 'lucide-react'
 
 export type Page =
-  | 'dashboard' | 'tracker' | 'attendance' | 'admin-attendance'
+  | 'dashboard' | 'tracker' | 'billing' | 'attendance' | 'admin-attendance'
   | 'user-management' | 'customers' | 'vendors' | 'reports' | 'organisation'
 
 interface NavLink { id: Page; label: string; Icon: any; roles: string[] }
@@ -14,6 +14,7 @@ interface NavLink { id: Page; label: string; Icon: any; roles: string[] }
 const ALL_LINKS: NavLink[] = [
   { id: 'dashboard',        label: 'Dashboard',           Icon: LayoutDashboard, roles: ['ADMIN', 'MANAGER', 'EMPLOYEE', 'CUSTOMER'] },
   { id: 'tracker',          label: 'Expense Tracker',     Icon: Wallet,          roles: ['ADMIN', 'MANAGER', 'EMPLOYEE'] },
+  { id: 'billing',          label: 'Billing',             Icon: ReceiptText,     roles: ['ADMIN', 'MANAGER'] },
   { id: 'attendance',       label: 'My Attendance',       Icon: CalendarCheck,   roles: ['MANAGER', 'EMPLOYEE', 'CUSTOMER'] },
   { id: 'admin-attendance', label: 'All Attendance',      Icon: MapPin,          roles: ['ADMIN'] },
   { id: 'customers',        label: 'Customers',           Icon: Users,           roles: ['ADMIN', 'MANAGER'] },

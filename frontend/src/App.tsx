@@ -4,6 +4,7 @@ import { Menu, HardHat } from 'lucide-react'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import ExpenseTracker from './pages/ExpenseTracker'
+import Billing from './pages/Billing'
 import Attendance from './pages/Attendance'
 import AdminAttendance from './pages/AdminAttendance'
 import UserManagement from './pages/UserManagement'
@@ -48,6 +49,7 @@ export default function App() {
   const pageMap: Partial<Record<Page, React.ReactNode>> = {
     dashboard:          <Dashboard user={user} />,
     tracker:            <ExpenseTracker />,
+    billing:            <Billing />,
     attendance:         <Attendance />,
     'admin-attendance': <AdminAttendance />,
     'user-management':  <UserManagement />,
@@ -58,7 +60,7 @@ export default function App() {
   }
 
   const currentLabel: Record<Page, string> = {
-    dashboard: 'Dashboard', tracker: 'Expense Tracker', attendance: 'My Attendance',
+    dashboard: 'Dashboard', tracker: 'Expense Tracker', billing: 'Billing', attendance: 'My Attendance',
     'admin-attendance': 'All Attendance', 'user-management': 'User Management',
     customers: 'Customers', vendors: 'Vendors', reports: 'Reports', organisation: 'Organisation',
   }

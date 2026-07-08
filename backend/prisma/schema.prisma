@@ -7,6 +7,59 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ---- GST Tax Invoice / Billing ----
+model Bill {
+  id            Int        @id @default(autoincrement())
+  invoiceNumber String     @unique
+  date          DateTime   @default(now())
+
+  // Bill To (customer)
+  billToName    String
+  billToAddress String?
+  billToGst     String?
+
+  // Order / project references
+  poNumber      String?
+  poDate        String?
+  vendorCode    String?
+  projectCode   String?
+  projectName   String?
+
+  // Tax
+  gstRate       Float      @default(9)   // per-half rate: 9 => CGST 9% + SGST 9%
+  subtotal      Float      @default(0)
+  cgst          Float      @default(0)
+  sgst          Float      @default(0)
+  total         Float      @default(0)
+  amountInWords String?
+
+  createdAt     DateTime   @default(now())
+  items         BillItem[]
+}
+
+model BillItem {
+  id          Int    @id @default(autoincrement())
+  billId      Int
+  bill        Bill   @relation(fields: [billId], references: [id], onDelete: Cascade)
+  lineNo      Int    @default(0)
+  description String
+  hsnCode     String?
+  unit        String @default("EA")
+  quantity    Float  @default(0)
+  unitPrice   Float  @default(0)
+  amount      Float  @default(0)
+}
+
+// Remembered product -> HSN/SAC mapping for quick reuse
+model HsnCode {
+  id          Int      @id @default(autoincrement())
+  description String   @unique
+  code        String
+  unit        String?
+  unitPrice   Float?
+  updatedAt   DateTime @updatedAt
+}
+
 model User {
   id              Int              @id @default(autoincrement())
   email           String           @unique

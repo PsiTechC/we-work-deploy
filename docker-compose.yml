@@ -10,6 +10,8 @@ services:
       JWT_SECRET: WeWork2024SecretKey_Rushika!
       PORT: 4000
       NODE_ENV: production
+    # push schema, seed once (|| true so re-runs don't crash on existing data), then start
+    command: sh -c "npx prisma db push && (npm run seed || true) && node dist/index.js"
     volumes:
       - sqlite_data:/app/data
       - uploads_data:/uploads
